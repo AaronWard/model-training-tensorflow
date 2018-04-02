@@ -7,17 +7,36 @@ This is the model that will be used to train the deep convolutional neaurl netwo
 
 import tensorflow as tf
 import os, os.path
+import pandas as pd
+import numpy as np
 
-###########################################################################################################
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  #Suppress AVX Warnings
+
+####################################### DATA PREPROCESSING - Labeling ################################################
 
 # Import and pre process images here
+labels = []
+list = os.listdir(os.getcwd() +'/data/training')
+
+# Add label names to list of labels
+for folders in list:
+    if(folders != "desktop.ini"):
+        labels.append(folders)
+
+# Creat one hot encodings
+dummy_vars = pd.get_dummies(labels)
+print(dummy_vars)
+
+####################################### DATA PREPROCESSING - Imaging #######################################
 
 
-data_path = "/data"
 
-###########################################################################################################
 
+
+
+
+#################################### VARIABLE INITIATATION #################################################
 
 # Define initial variables
 batch_size = 100
@@ -32,8 +51,7 @@ y = tf.placeholder('float')
 keep_rate = .8
 keep_prop = tf.placeholder(tf.float32)
 
-###########################################################################################################
-
+######################################## HELPER FUNCTIONS #################################################
 
 # Extract features
 def conv2d(x, W):
@@ -43,9 +61,7 @@ def conv2d(x, W):
 def maxpool2d(x):
   return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME') #pool 2 pixels at a time
 
-
-
-###########################################################################################################
+######################################## NETWORK DEFINITION ################################################
 
 
 # Define the weights and biases as dictionaries and
@@ -89,8 +105,7 @@ def convolutional_network(x):
     return output
 
 
-
-###########################################################################################################
+####################################### TENSORFLOW SESSION ###################################################
 
 def train_network(x):
     pred = convolutional_network(x)
@@ -108,7 +123,7 @@ def train_network(x):
             #
             #
             # 
-            print('Epoch : ', epoch+1, ' of ', num_epochs, ' - Loss: ', loss)
+            # print('Epoch : ', epoch+1, ' of ', num_epochs, ' - Loss: ', loss)
 
         # correct = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
         # acc = tf.reduce_mean(tf.cast(correct, 'float'))
