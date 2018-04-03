@@ -1,6 +1,5 @@
-
 '''
-This is the model that will be used to train the deep convolutional neaurl network.
+This is the model that will be used to train the deep convolutional neaural network.
 
 @Author : Aaron Ward 
 '''
@@ -9,32 +8,62 @@ import tensorflow as tf
 import os, os.path
 import pandas as pd
 import numpy as np
-
+from numpy import ndarray
+import skimage
+from skimage import data, io, filters
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  #Suppress AVX Warnings
 
+ROOT_PATH = os.getcwd()
+TRAINING_DIR = os.getcwd() + '/data/training'
+
 ####################################### DATA PREPROCESSING - Labeling ################################################
 
-# Import and pre process images here
-labels = []
-list = os.listdir(os.getcwd() +'/data/training')
+# # Import and pre process images here
+# labels = []
+# list = os.listdir(TRAINING_DIR)
 
-# Add label names to list of labels
-for folders in list:
-    if(folders != "desktop.ini"):
-        labels.append(folders)
+# # Add label names to list of labels
+# for folders in list:
+#     if(folders != "desktop.ini"):
+#         labels.append(folders)
 
-# Creat one hot encodings
-dummy_vars = pd.get_dummies(labels)
-print(dummy_vars)
+# # Creat one hot encodings
+# dummy_vars = pd.get_dummies(labels)
+# # print(dummy_vars)
 
 ####################################### DATA PREPROCESSING - Imaging #######################################
 
+'''
+This function traverses throwe ach directory of training images
+Two lists are made:
+    - The RGB image values are added to the images list
+    - For every photo in say the 'angry' directory of images, a 
+    corresponding label is added to the label list
+'''
+def load_data(TRAINING_DIR):
+    images = []
+    labels = []
+    directories = [d for d in os.listdir(TRAINING_DIR) 
+                if os.path.isdir(os.path.join(TRAINING_DIR, d))]
 
+    # Traverse through each directory and make a list
+    # of files names if they end in the PNG format
+    for d in directories:
+        label_directory = os.path.join(TRAINING_DIR, d)
+        file_names = [os.path.join(label_directory, f) 
+                        for f in os.listdir(label_directory) 
+                          if f.endswith(".png")]
 
+        #Traverse through each file, add the image data
+        # and label to the 2 lists
+        for f in file_names:
+            images.append(skimage.data.imread(f))
+            labels.append(d)
 
+    return images, labels
 
-
+images, labels = load_data(TRAINING_DIR)
 
 #################################### VARIABLE INITIATATION #################################################
 
@@ -74,7 +103,6 @@ def convolutional_network(x):
         'weights_fully_con' : tf.Variable(tf.random_normal([7*7*256,4096])),
         'weights_out' : tf.Variable(tf.random_normal([4096, num_class]))
     }
-
 
     biases = {
         'bias_conv1' : tf.Variable(tf.random_normal([64])),
