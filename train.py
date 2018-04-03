@@ -64,48 +64,39 @@ images, labels = load_data(TRAINING_DIR)
 This cell is for displaying data visualy using Matplotlib
 This does not have any bearing on the model so can be commented out when
 not being used.
+
+copy and past the code from visualization.py into
+
 '''
-
 import matplotlib.pyplot as plt 
-label_names = ['angry', 'fear', 'happy', 'neutral', 'sadness', 'suprise']
-num_angry = 0
-num_fear = 0
-num_happy = 0
-num_neutral = 0
-num_sad = 0
-num_suprise = 0
-
-for l in labels:
-    x = l + ""
-    if x == label_names[0]:
-        num_angry += 1
-    elif x == label_names[1]:
-        num_fear += 1
-    elif x == label_names[2]:
-        num_happy += 1
-    elif x == label_names[3]:
-        num_neutral += 1
-    elif x == label_names[4]:
-        num_sad += 1
-    else:
-        num_suprise += 1
-
-label_count = [num_angry, num_fear, num_happy, num_neutral, num_sad, num_suprise]
-
-print(label_count)
-objects = ('Angry', 'Fear', 'Happy', 'Nuetral', 'Sad', 'Suprise')
-y_pos = np.arange(len(objects))
-performance = label_count
-plt.bar(y_pos, performance, align='center', alpha=0.5)
-plt.xticks(y_pos, objects)
-plt.ylabel('Instances')
-plt.title('Classes for Training Set')
-plt.savefig('test.jpg')
 
 
 ####################################### DATA PREPROCESSING - Imaging #######################################
+'''
+This cell is for image downsampling and transformation
+This is on the fly to resize the images to a 50x50 size
+'''
+from skimage import transform, exposure
+from skimage.color import rgb2gray
 
+print('equalizing exposure...')
+images = [exposure.equalize_adapthist(image, clip_limit=0.0001)for image in images]
 
+print('Down scaling images...')
+image50 = [transform.resize(image, (50, 50)) for image in images]
+
+image50 = np.array(image50)
+# image50 = rgb2gray(image50)
+
+print('plotting...')
+random = [295, 3098, 997, 4999]
+for i in range(len(random)):
+    plt.subplot(1, 4, i+1)
+    plt.axis('off')
+    plt.imshow(images[random[i]])
+    plt.subplots_adjust(wspace=0.1)
+
+plt.savefig('exp.jpg')
 
 
 
