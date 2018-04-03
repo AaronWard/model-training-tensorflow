@@ -59,11 +59,15 @@ def load_data(TRAINING_DIR):
 
 images, labels = load_data(TRAINING_DIR)
 
+####################################### DATA VISUALISATION #######################################
+''''
+This cell is for displaying data visualy using Matplotlib
+This does not have any bearing on the model so can be commented out when
+not being used.
+'''
+
 import matplotlib.pyplot as plt 
-
-
 label_names = ['angry', 'fear', 'happy', 'neutral', 'sadness', 'suprise']
-
 num_angry = 0
 num_fear = 0
 num_happy = 0
@@ -86,15 +90,17 @@ for l in labels:
     else:
         num_suprise += 1
 
-label_count = [num_angry, num_fear, num_happy, num_neutral, num_sad, num_sad, num_suprise]
+label_count = [num_angry, num_fear, num_happy, num_neutral, num_sad, num_suprise]
 
 print(label_count)
-
-
-x = np.arange(7)
-plt.bar(x, height= [1,500,1000, 1500])
-plt.xticks(x+.5, [label_names]);
-
+objects = ('Angry', 'Fear', 'Happy', 'Nuetral', 'Sad', 'Suprise')
+y_pos = np.arange(len(objects))
+performance = label_count
+plt.bar(y_pos, performance, align='center', alpha=0.5)
+plt.xticks(y_pos, objects)
+plt.ylabel('Instances')
+plt.title('Classes for Training Set')
+plt.savefig('test.jpg')
 
 
 ####################################### DATA PREPROCESSING - Imaging #######################################
