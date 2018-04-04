@@ -1,28 +1,30 @@
 
-# label_names = ['angry', 'fear', 'happy', 'neutral', 'sadness', 'suprise']
-# num_angry = 0
-# num_fear = 0
-# num_happy = 0
-# num_neutral = 0
-# num_sad = 0
-# num_suprise = 0
+label_names = [0,1,2,3,4,6]
+num_angry = 0
+num_fear = 0
+num_happy = 0
+num_neutral = 0
+num_sad = 0
+num_suprise = 0
 
-# for l in labels:
-#     x = l + ""
-#     if x == label_names[0]:
-#         num_angry += 1
-#     elif x == label_names[1]:
-#         num_fear += 1
-#     elif x == label_names[2]:
-#         num_happy += 1
-#     elif x == label_names[3]:
-#         num_neutral += 1
-#     elif x == label_names[4]:
-#         num_sad += 1
-#     else:
-#         num_suprise += 1
-# label_count = [num_angry, num_fear, num_happy, num_neutral, num_sad, num_suprise]
-# print(label_count)
+for l in labels:
+    x = l
+    if x == label_names[0]:
+        num_angry += 1
+    elif x == label_names[1]:
+        num_fear += 1
+    elif x == label_names[2]:
+        num_happy += 1
+    elif x == label_names[3]:
+        num_neutral += 1
+    elif x == label_names[4]:
+        num_sad += 1
+    else:
+        num_suprise += 1
+label_count = [num_angry, num_fear, num_happy, num_neutral, num_sad, num_suprise]
+print(label_count)
+
+
 
 ''' Print a bar graph of the instances of classes '''
 # objects = ('Angry', 'Fear', 'Happy', 'Neutral', 'Sad', 'Suprise')
@@ -67,3 +69,18 @@
 #     plt.imshow(image)
 # plt.savefig('image_label.jpg')
 
+
+
+
+####################################################################################################
+
+# ONE HOT ENCODER - NOT USED
+# list = os.listdir(TRAINING_DIR)
+# # Add label names to list of labels
+# for folders in list:
+#     if(folders != "desktop.ini"):
+#         labels.append(folders)
+
+# # Creat one hot encodings
+# dummy_vars = pd.get_dummies(labels)
+# # print(dummy_vars)

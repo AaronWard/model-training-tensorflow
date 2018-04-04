@@ -15,24 +15,14 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  #Suppress AVX Warnings
 
 ROOT_PATH = os.getcwd()
 TRAINING_DIR = os.getcwd() + '/data/training'
-
 ####################################### DATA PREPROCESSING - Labeling ################################################
-# list = os.listdir(TRAINING_DIR)
-# # Add label names to list of labels
-# for folders in list:
-#     if(folders != "desktop.ini"):
-#         labels.append(folders)
-
-# # Creat one hot encodings
-# dummy_vars = pd.get_dummies(labels)
-# # print(dummy_vars)
-
 '''
 This function traverses throwe ach directory of training images
 Two lists are made:
     - The RGB image values are added to the images list
     - For every photo in say the 'angry' directory of images, a 
     corresponding label is added to the label list
+
 '''
 def load_data(TRAINING_DIR):
     images = []
@@ -71,6 +61,7 @@ copy and past the code from visualization.py into
 '''
 import matplotlib.pyplot as plt 
 
+
 ####################################### DATA PREPROCESSING - Imaging #######################################
 '''
 This cell is for image downsampling and transformation
@@ -80,32 +71,24 @@ from skimage import transform, exposure
 from skimage.color import rgb2gray
 
 print('Down scaling images...')
-images = [transform.resize(image, (50, 50)) for image in images]
+# images = [transform.resize(image, (50, 50)) for image in images]
 
 # print('equalizing exposure...')
 # images = [exposure.equalize_adapthist(image, clip_limit=0.0001)for image in images50]
 
 
-# Plot the down sized / augmented image
-# random = [295, 3098, 997, 4999]
-# for i in range(len(random)):
-#     plt.subplot(1, 4, i+1)
-#     plt.axis('off')
-#     plt.imshow(images[random[i]])
-#     plt.subplots_adjust(wspace=0.1)
-# plt.savefig('exp.jpg')
-
-
-
 #################################### VARIABLE INITIATATION #################################################
+'''
+This cell is for initializing variables for the tensorflow session and 
+placeholders for holding the data.
 
+'''
 # Define initial variables
 batch_size = 128
 num_class = 6
 num_epochs = 25
 
 # Initialize placeholders 
-
 # x = tf.placeholder('float', [5582, 50, 50])
 x = tf.placeholder(dtype = tf.float32, shape = [None, 50, 50])
 y = tf.placeholder(dtype = tf.int32, shape = [None])
@@ -116,6 +99,11 @@ keep_prop = tf.placeholder(tf.float32)
 
 # ######################################## HELPER FUNCTIONS #################################################
 
+'''
+This cell just contains helper functions for defining convolution
+and maxpooling layers
+
+'''
 # Extract features
 def conv2d(x, W):
   return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME') #move one pixel at s time
@@ -124,8 +112,15 @@ def conv2d(x, W):
 def maxpool2d(x):
   return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME') #pool 2 pixels at a time
 
-# # ######################################## NETWORK DEFINITION ################################################
 
+########################################## NETWORK DEFINITION ################################################
+'''
+This cell contains a function that is used define the weights and biases of each layer in the
+network. It is called by the train_network function. It also lays out the
+structure of the network that goes as follows:
+conv1 -> maxpooling -> conv2 -> maxpooling - > conv3 -> fully connected layer (with dropout) -> output layer
+
+'''
 
 # Define the weights and biases as dictionaries and
 # define structure of the network
@@ -167,42 +162,14 @@ def convolutional_network(x):
     return output
 
 
-# ####################################### TENSORFLOW SESSION ###################################################
+######################################## TENSORFLOW SESSION ###################################################
+'''
+This cell contains a function that runs the tensorflow session, it is called with the x placeholders.
+The session is ran by first initializing all the tensorflow variables, then iterated through
+the number of epochs and feed the image data and labels using feed_dict.
+The loss/cost and accuracy is evaluated and printed to the console.
 
-# # Flatten the input data
-# images_flat = tf.contrib.layers.flatten(x)
-# # Fully connected layer 
-# logits = tf.contrib.layers.fully_connected(images_flat, 6, tf.nn.relu)
-# # Define a loss function
-# loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels = y, logits = logits))
-# # Define an optimizer 
-# train_op = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
-# # Convert logits to label indexes
-# correct_pred = tf.argmax(logits, 1)
-# # Define an accuracy metric
-# accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
-
-# print("images_flat: ", images_flat)
-# print("logits: ", logits)
-# print("loss: ", loss)
-# print("predicted_labels: ", correct_pred)
-
-
-# tf.set_random_seed(1234)
-# sess = tf.Session()
-
-# sess.run(tf.global_variables_initializer())
-
-# for i in range(201):
-#         print('EPOCH', i)
-#         _, accuracy_val = sess.run([train_op, accuracy], feed_dict={x: images, y: labels})
-#         if i % 10 == 0:
-#             print("Loss: ", loss)
-#         print('DONE WITH EPOCH')
-
-# sess.close()
-
-
+'''
 
 def train_network(x):
     pred = convolutional_network(x)
@@ -214,7 +181,6 @@ def train_network(x):
         sess.run(tf.global_variables_initializer()) # Initialize all the variables
 
         print("RUNNING SESSION...")
-
         for epoch in range(num_epochs):
             for _ in range(1):
                 _, loss_value = sess.run([train_op, loss], feed_dict={x: images, y: labels})
@@ -225,6 +191,7 @@ def train_network(x):
         acc = tf.reduce_mean(tf.cast(correct, 'float'))
         print('Accuracy:', acc)
 
-# ###########################################################################################################
 
-train_network(x)
+
+############################################################################################################
+# train_network(x)
