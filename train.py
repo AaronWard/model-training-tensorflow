@@ -218,6 +218,7 @@ def train_network(x):
         for epoch in range(num_epochs):
             for _ in range(1):
                 _, loss_value = sess.run([train_op, loss], feed_dict={x: images, y: labels})
+                print("feed")
             print('Epoch : ', epoch+1, ' of ', num_epochs, ' - Loss: ', loss_value)
 
         correct = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
