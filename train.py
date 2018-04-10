@@ -15,13 +15,14 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  #Suppress AVX Warnings
 
 ROOT_PATH = os.getcwd()
 TRAINING_DIR = os.getcwd() + '/data/training'
+MODEL_PATH = os.getcwd() + '/output/trained_model.ckpt'
 ####################################### DATA PREPROCESSING - Labeling ################################################
 '''
 This function traverses throwe ach directory of training images
 Two lists are made:
     - The RGB image values are added to the images list
     - For every photo in say the 'angry' directory of images, a 
-    corresponding label is added to the label list
+      corresponding label is added to the label list
 
 '''
 def load_data(TRAINING_DIR):
@@ -59,8 +60,7 @@ not being used.
 copy and past the code from visualization.py into
 
 '''
-import matplotlib.pyplot as plt 
-
+# import matplotlib.pyplot as plt 
 
 ####################################### DATA PREPROCESSING - Imaging #######################################
 '''
@@ -71,7 +71,7 @@ from skimage import transform, exposure
 from skimage.color import rgb2gray
 
 print('Down scaling images...')
-# images = [transform.resize(image, (50, 50)) for image in images]
+images = [transform.resize(image, (50, 50)) for image in images]
 
 # print('equalizing exposure...')
 # images = [exposure.equalize_adapthist(image, clip_limit=0.0001)for image in images50]
@@ -84,7 +84,7 @@ placeholders for holding the data.
 
 '''
 # Define initial variables
-batch_size = 128
+batch_size = 100
 num_class = 6
 num_epochs = 25
 
@@ -161,7 +161,6 @@ def convolutional_network(x):
     output = tf.matmul(fully_con, weights['weights_out']) + biases['bias_out']
     return output
 
-
 ######################################## TENSORFLOW SESSION ###################################################
 '''
 This cell contains a function that runs the tensorflow session, it is called with the x placeholders.
@@ -172,6 +171,7 @@ The loss/cost and accuracy is evaluated and printed to the console.
 '''
 
 def train_network(x):
+    saver = tf.train.Saver()
     pred = convolutional_network(x)
     # cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels= y))
     loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels = y, logits = pred))
@@ -191,7 +191,7 @@ def train_network(x):
         acc = tf.reduce_mean(tf.cast(correct, 'float'))
         print('Accuracy:', acc)
 
-
-
+        save_path = saver.save(sess, MODEL_PATH)
+        print("Model saved in file: " , save_path)
 ############################################################################################################
-# train_network(x)
+train_network(x)
