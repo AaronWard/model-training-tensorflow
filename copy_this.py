@@ -10,12 +10,13 @@ import numpy as np
 from numpy import ndarray
 import skimage
 from skimage import data, io, filters
+print('imported')
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  #Suppress AVX Warnings
 
-ROOT_PATH = os.getcwd()
-TRAINING_DIR = os.getcwd() + '/data/training'
-MODEL_PATH = os.getcwd() + '/output/trained_model.ckpt'
+
+TRAINING_DIR = '/data/training'
+MODEL_PATH = '/output/trained_model.ckpt'
+
 ####################################### DATA PREPROCESSING - Labeling ################################################
 '''
 This function traverses throwe ach directory of training images
@@ -30,6 +31,9 @@ def load_data(TRAINING_DIR):
     labels = []
     directories = [d for d in os.listdir(TRAINING_DIR) 
                 if os.path.isdir(os.path.join(TRAINING_DIR, d))]
+    # Need to sort these because
+    # floyd hum jumbled up the order
+    directories = sorted(directories, key=int)
 
     # Traverse through each directory and make a list
     # of files names if they end in the PNG format
@@ -48,25 +52,39 @@ def load_data(TRAINING_DIR):
 
 images, labels = load_data(TRAINING_DIR)
 
-images = np.array(images)
-labels = np.array(labels)
+print(images)
+print(labels)
 
-####################################### DATA VISUALISATION #######################################
-''''
-This cell is for displaying data visualy using Matplotlib
-This does not have any bearing on the model so can be commented out when
-not being used.
+# images = np.array(images)
+# labels = np.array(labels)
 
-copy and past the code from visualization.py into
 
-'''
-# import matplotlib.pyplot as plt 
+#plot the images with their labels to make sure they are correct
+
+import matplotlib.pyplot as plt 
+unique_labels = set(labels)
+# Initialize the figure
+plt.figure(figsize=(30, 30))
+# Set a counter
+i = 1
+for label in unique_labels:
+    # You pick the first image for each label
+    image = images[labels.index(label)]
+    plt.subplot(1, 6, i)
+    plt.axis('off')
+    plt.title("Label {0} ({1})".format(label, labels.count(label)))
+    i += 1
+    plt.imshow(image)
+plt.show()
+
+
 
 ####################################### DATA PREPROCESSING - Imaging #######################################
 '''
 This cell is for image downsampling and transformation
 This is on the fly to resize the images to a 50x50 size
 '''
+
 from skimage import transform, exposure
 from skimage.color import rgb2gray
 
@@ -76,6 +94,9 @@ images = [transform.resize(image, (50, 50)) for image in images]
 # print('equalizing exposure...')
 # images = [exposure.equalize_adapthist(image, clip_limit=0.0001)for image in images50]
 
+print(' ------------ IMAGES DOWNSCALED ------------')
+
+
 
 #################################### VARIABLE INITIATATION #################################################
 '''
@@ -83,6 +104,7 @@ This cell is for initializing variables for the tensorflow session and
 placeholders for holding the data.
 
 '''
+
 # Define initial variables
 batch_size = 100
 num_class = 6
@@ -96,14 +118,17 @@ y = tf.placeholder(dtype = tf.int32, shape = [None])
 #define variables for dropout
 keep_rate = .8
 keep_prop = tf.placeholder(tf.float32)
+print('initialized')
 
-# ######################################## HELPER FUNCTIONS #################################################
+
+######################################### HELPER FUNCTIONS #################################################
 
 '''
 This cell just contains helper functions for defining convolution
 and maxpooling layers
 
 '''
+
 # Extract features
 def conv2d(x, W):
   return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME') #move one pixel at s time
@@ -111,6 +136,8 @@ def conv2d(x, W):
 #
 def maxpool2d(x):
   return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME') #pool 2 pixels at a time
+
+print('helpers defined')
 
 
 ########################################## NETWORK DEFINITION ################################################
@@ -161,41 +188,7 @@ def convolutional_network(x):
     output = tf.matmul(fully_con, weights['weights_out']) + biases['bias_out']
     return output
 
-######################################## TENSORFLOW SESSION ###################################################
-'''
-This cell is for segmenting the training data in to batches to relieve the GPU of being overloaded
-with data.
-'''
-
-num_images = len(images)
-num_labels = len(labels)
-
-BATCHES_IMAGES = []
-BATCHES_LABELS = []
-
-batch_start= 0
-batch_end = 100
-#Batch the 8400 images into batchs of size 100
-for i in range(int(num_images/batch_size)):
-    temp_batch = images[batch_start:batch_end]
-    BATCHES_IMAGES.append(temp_batch)
-    batch_start = batch_start + 100
-    batch_end = batch_end + 100
-
-batch_start= 0
-batch_end = 100
-# batch the 8400 Label into 84 batchs of 100
-for i in range(int(num_labels/batch_size)):
-    temp_batch = labels[batch_start:batch_end]
-    BATCHES_LABELS.append(temp_batch)
-    batch_start = batch_start + 100
-    batch_end = batch_end + 100
-
-print('NUM BATCH IMAGES : ', len(BATCHES_IMAGES))
-
-print('NUM BATCHES LABELS : ', len(BATCHES_LABELS))
-
-
+print('network defined')
 
 
 ######################################## TENSORFLOW SESSION ###################################################
@@ -208,6 +201,7 @@ The loss/cost and accuracy is evaluated and printed to the console.
 '''
 
 def train_network(x):
+    print('Starting training...')
     pred = convolutional_network(x)
     # cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels= y))
     loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels = y, logits = pred))
@@ -217,17 +211,10 @@ def train_network(x):
         sess.run(tf.global_variables_initializer()) # Initialize all the variables
         saver = tf.train.Saver()
 
-
-        train_batch_x = []
-        train_batch_y = []
-
         print("RUNNING SESSION...")
         for epoch in range(num_epochs):
-            # for x in range(len(BATCHES_IMAGES)):
-            for b in range(len(BATCHES_IMAGES)):
-                train_batch_x = BATCHES_IMAGES[b]
-                train_batch_y = BATCHES_LABELS[b]
-                _, loss_value = sess.run([train_op, loss], feed_dict={x: train_batch_x, y: train_batch_y})
+            _, loss_value = sess.run([train_op, loss], feed_dict={x: images, y: labels})
+            print("feed")
             print('Epoch : ', epoch+1, ' of ', num_epochs, ' - Loss: ', loss_value)
 
         correct = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
@@ -236,5 +223,6 @@ def train_network(x):
 
         save_path = saver.save(sess, MODEL_PATH)
         print("Model saved in file: " , save_path)
-############################################################################################################
+        
+
 train_network(x)
