@@ -89,6 +89,7 @@ num_class = 6
 num_epochs = 25
 
 # Initialize placeholders 
+# x = tf.placeholder('float', [5582, 50, 50])
 x = tf.placeholder(dtype = tf.float32, shape = [None, 50, 50])
 y = tf.placeholder(dtype = tf.int32, shape = [None])
 
@@ -172,30 +173,23 @@ FOR EXAMPLE
 BATCH_LABELS = [[0,0,0,0,0 ... 0], [0,0,0,0 .... 0]  ... 14 batches per class ... [1,1,1,1,1 .. 1], [1,1,1,1 ..] ...[...,5,5]] 
 
 '''
-# 8400 images and 8400 labels
+
 num_images = len(images)
 num_labels = len(labels)
-
-# ## KEEP THESE FOR DEBUGGING
-print(num_images, ' images')
-print(num_labels, ' labels')
-print('batch size ', batch_size)
-print('Number of batches ', int(num_images/batch_size))
-
-batch_start= 0
-batch_end = 100
 
 BATCHES_IMAGES = []
 BATCHES_LABELS = []
 
-# batch images into 84 batchs of size 100
+batch_start= 0
+batch_end = 100
+#Batch the 8400 images into batchs of size 100
 for i in range(int(num_images/batch_size)):
     temp_batch = images[batch_start:batch_end]
     BATCHES_IMAGES.append(temp_batch)
     batch_start = batch_start + 100
     batch_end = batch_end + 100
 
-batch_start = 0
+batch_start= 0
 batch_end = 100
 # batch the 8400 Label into 84 batchs of 100
 for i in range(int(num_labels/batch_size)):
@@ -204,6 +198,11 @@ for i in range(int(num_labels/batch_size)):
     batch_start = batch_start + 100
     batch_end = batch_end + 100
 
+print('NUM BATCH IMAGES : ', len(BATCHES_IMAGES))
+print('NUM BATCHES LABELS : ', len(BATCHES_LABELS))
+
+
+######################################## TENSORFLOW SESSION ###################################################
 '''
 This cell contains a function that runs the tensorflow session, it is called with the x placeholders.
 The session is ran by first initializing all the tensorflow variables, then iterated through
@@ -225,14 +224,14 @@ def train_network(x):
         for epoch in range(num_epochs):
             train_batch_x = []
             train_batch_y = []
-            epoch_loss = 0
             for i in range(0, 84):
                 train_batch_x = BATCHES_IMAGES[i]
-                train_batch_y = BATCHES_LABELS[i]                
+                train_batch_y = BATCHES_LABELS[i]
+                
+                print('Starting feed_dict on batch ', i)
                 _, loss_value = sess.run([train_op, loss], feed_dict={x: train_batch_x, y: train_batch_y})
-                epoch_loss += loss_value
-                print('batch ', i)
-            print('Epoch : ', epoch+1, ' of ', num_epochs, ' - Loss for epoch: ', epoch_loss)
+                print('Finished batch --- loss: ', loss_value)
+            print('Epoch : ', epoch+1, ' of ', num_epochs, ' - Loss: ', loss_value)
 
         correct = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
         acc = tf.reduce_mean(tf.cast(correct, 'float'))
@@ -241,4 +240,4 @@ def train_network(x):
         save_path = saver.save(sess, MODEL_PATH)
         print("Model saved in file: " , save_path)
 ############################################################################################################
-# train_network(x)
+train_network(x)

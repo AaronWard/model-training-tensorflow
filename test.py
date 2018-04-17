@@ -1,5 +1,5 @@
 '''
-This is the model that will be used to train the deep convolutional neaural network.
+This is a testing script for the trained model
 
 @Author : Aaron Ward 
 '''
@@ -10,12 +10,13 @@ import numpy as np
 from numpy import ndarray
 import skimage
 from skimage import data, io, filters
-print('imported')
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  #Suppress AVX Warnings
 
+ROOT_PATH = os.getcwd()
+TESTING_DIR = os.getcwd() + '/data/testing'
+TRAINED_MODEL = os.getcwd() + '/output/trained_model.ckpt'
 
-TRAINING_DIR = '/data/training'
-MODEL_PATH = '/output/trained_model.ckpt'
 
 ####################################### DATA PREPROCESSING - Labeling ################################################
 '''
@@ -26,19 +27,16 @@ Two lists are made:
       corresponding label is added to the label list
 
 '''
-def load_data(TRAINING_DIR):
+def load_data(TESTING_DIR):
     images = []
     labels = []
-    directories = [d for d in os.listdir(TRAINING_DIR) 
-                if os.path.isdir(os.path.join(TRAINING_DIR, d))]
-    # Need to sort these because
-    # floyd hum jumbled up the order
-    directories = sorted(directories, key=int)
+    directories = [d for d in os.listdir(TESTING_DIR) 
+                if os.path.isdir(os.path.join(TESTING_DIR, d))]
 
     # Traverse through each directory and make a list
     # of files names if they end in the PNG format
     for d in directories:
-        label_directory = os.path.join(TRAINING_DIR, d)
+        label_directory = os.path.join(TESTING_DIR, d)
         file_names = [os.path.join(label_directory, f) 
                         for f in os.listdir(label_directory) 
                           if f.endswith(".png")]
@@ -50,33 +48,10 @@ def load_data(TRAINING_DIR):
 
     return images, labels
 
-images, labels = load_data(TRAINING_DIR)
+images, labels = load_data(TESTING_DIR)
 
-print(images)
-print(labels)
-
-# images = np.array(images)
+images = np.array(images)
 # labels = np.array(labels)
-
-
-#plot the images with their labels to make sure they are correct
-
-import matplotlib.pyplot as plt 
-unique_labels = set(labels)
-# Initialize the figure
-plt.figure(figsize=(30, 30))
-# Set a counter
-i = 1
-for label in unique_labels:
-    # You pick the first image for each label
-    image = images[labels.index(label)]
-    plt.subplot(1, 6, i)
-    plt.axis('off')
-    plt.title("Label {0} ({1})".format(label, labels.count(label)))
-    i += 1
-    plt.imshow(image)
-plt.show()
-
 
 
 ####################################### DATA PREPROCESSING - Imaging #######################################
@@ -84,18 +59,14 @@ plt.show()
 This cell is for image downsampling and transformation
 This is on the fly to resize the images to a 50x50 size
 '''
-
 from skimage import transform, exposure
-from skimage.color import rgb2gray
+# from skimage.color import rgb2gray
 
 print('Down scaling images...')
 images = [transform.resize(image, (50, 50)) for image in images]
 
 # print('equalizing exposure...')
 # images = [exposure.equalize_adapthist(image, clip_limit=0.0001)for image in images50]
-
-print(' ------------ IMAGES DOWNSCALED ------------')
-
 
 
 #################################### VARIABLE INITIATATION #################################################
@@ -104,31 +75,22 @@ This cell is for initializing variables for the tensorflow session and
 placeholders for holding the data.
 
 '''
-
 # Define initial variables
 batch_size = 100
 num_class = 6
-num_epochs = 25
 
 # Initialize placeholders 
-# x = tf.placeholder('float', [5582, 50, 50])
 x = tf.placeholder(dtype = tf.float32, shape = [None, 50, 50])
 y = tf.placeholder(dtype = tf.int32, shape = [None])
 
-#define variables for dropout
-keep_rate = .8
-keep_prop = tf.placeholder(tf.float32)
-print('initialized')
 
-
-######################################### HELPER FUNCTIONS #################################################
+# ######################################## HELPER FUNCTIONS #################################################
 
 '''
 This cell just contains helper functions for defining convolution
 and maxpooling layers
 
 '''
-
 # Extract features
 def conv2d(x, W):
   return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME') #move one pixel at s time
@@ -136,8 +98,6 @@ def conv2d(x, W):
 #
 def maxpool2d(x):
   return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME') #pool 2 pixels at a time
-
-print('helpers defined')
 
 
 ########################################## NETWORK DEFINITION ################################################
@@ -165,7 +125,7 @@ def convolutional_network(x):
         'bias_conv2' : tf.Variable(tf.random_normal([128])),
         'bias_conv3' : tf.Variable(tf.random_normal([256])),
         'bias_fully_con' : tf.Variable(tf.random_normal([4096])),
-        'bias_out' : tf.Variable(tf.random_normal([num_class]))
+        'bias_out' : tf.Variable(tf.random_normal([batch_size, num_class]))
     }
 
     x = tf.reshape(x, shape=[-1, 50, 50, 1])
@@ -183,15 +143,49 @@ def convolutional_network(x):
     # The fully connected layer
     fully_con = tf.reshape(conv3, [-1, 7*7*256])
     fully_con = tf.nn.relu(tf.matmul(fully_con, weights['weights_fully_con']) + biases['bias_fully_con'])
-    fc = tf.nn.dropout(fully_con, keep_rate) # Apply dropout
+    # fc = tf.nn.dropout(fully_con, keep_rate) # Apply dropout
 
     output = tf.matmul(fully_con, weights['weights_out']) + biases['bias_out']
     return output
 
-print('network defined')
+######################################## BATCHING ###################################################
+'''
+This cell is for segmenting the training data in to batches to relieve the GPU of being overloaded
+with data.
 
+'''
+# 8400 images and 8400 labels
+num_images = len(images)
+num_labels = len(labels)
 
-######################################## TENSORFLOW SESSION ###################################################
+# ## KEEP THESE FOR DEBUGGING
+print(num_images, ' images')
+print(num_labels, ' labels')
+print('batch size ', batch_size)
+print('Number of batches ', int(num_images/batch_size))
+
+batch_start= 0
+batch_end = 100
+
+BATCHES_IMAGES = []
+BATCHES_LABELS = []
+
+# batch images into 84 batchs of size 100
+for i in range(int(num_images/batch_size)):
+    temp_batch = images[batch_start:batch_end]
+    BATCHES_IMAGES.append(temp_batch)
+    batch_start = batch_start + 100
+    batch_end = batch_end + 100
+
+batch_start = 0
+batch_end = 100
+# batch the 8400 Label into 84 batchs of 100
+for i in range(int(num_labels/batch_size)):
+    temp_batch = labels[batch_start:batch_end]
+    BATCHES_LABELS.append(temp_batch)
+    batch_start = batch_start + 100
+    batch_end = batch_end + 100
+
 '''
 This cell contains a function that runs the tensorflow session, it is called with the x placeholders.
 The session is ran by first initializing all the tensorflow variables, then iterated through
@@ -201,21 +195,33 @@ The loss/cost and accuracy is evaluated and printed to the console.
 '''
 
 def train_network(x):
-    print('Starting training...')
     pred = convolutional_network(x)
-    # cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels= y))
-    loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels = y, logits = pred))
-    train_op = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
+    # loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels = y, logits = pred))
+    # train_op = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
+    cost = tf.reduce_sum(tf.square(pred - y))
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer()) # Initialize all the variables
         saver = tf.train.Saver()
 
-        print("RUNNING SESSION...")
-        for epoch in range(num_epochs):
-            _, loss_value = sess.run([train_op, loss], feed_dict={x: images, y: labels})
-            print("feed")
-            print('Epoch : ', epoch+1, ' of ', num_epochs, ' - Loss: ', loss_value)
+        # print("RUNNING SESSION...")
+        # for epoch in range(num_epochs):
+        train_batch_x = []
+        train_batch_y = []
+        epoch_loss = 0
+        # for i in range(0, 84):
+        #     train_batch_x = BATCHES_IMAGES[i]
+        #     train_batch_y = BATCHES_LABELS[i]          
+        images = np.array(images)      
+        pr, loss_value = sess.run([pred], [loss], feed_dict={x: images, y: labels})
+
+        for i in range(len(pr)):
+            err = abs(pr[i] - y[i])
+            print("Output:", pr[i], '\t - Label Y: ', y[i], '\t - Error: ', err, '\t - Loss: ', loss_value )
+            average_err += err
+        average_err = average_err/len(pr)
+        print('Average Error: ', ave)
+
 
         correct = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
         acc = tf.reduce_mean(tf.cast(correct, 'float'))
@@ -223,6 +229,5 @@ def train_network(x):
 
         save_path = saver.save(sess, MODEL_PATH)
         print("Model saved in file: " , save_path)
-        
-
+############################################################################################################
 train_network(x)

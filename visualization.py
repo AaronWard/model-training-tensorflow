@@ -84,3 +84,51 @@
 # # Creat one hot encodings
 # dummy_vars = pd.get_dummies(labels)
 # # print(dummy_vars)
+
+
+####################################################################################################
+#Plotting the loss with pyplot 
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+from matplotlib.ticker import NullFormatter
+
+loss = [
+    # 5534948111.29, 
+    # 190246561.785,
+    # 2687721.87646, 
+    # 173743.435638,
+    37462.5181961,
+    18471.0896435,
+    11579.234355,
+    8794.70186961,
+    7627.35857039,
+    6429.21610296, 
+    6418.67906547,
+    5488.79455012,
+    5493.91774639,
+    5232.9456518,
+    4939.2082068, 
+    5058.37764013, 
+    4985.056026, 
+    4820.04455124, 
+    4715.96226606, 
+    4758.63074559, 
+    4639.21305159, 
+    4645.61671885,
+    4711.5498182, 
+    4623.56152188,
+    4566.40746532]
+
+epochs = [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 
+        20, 21, 22, 23, 24, 25]
+
+plt.grid(True)
+plt.plot(epochs, loss)
+plt.title('Loss Results for Training')
+plt.ylabel('Loss')
+plt.xlabel('Epochs')
+plt.xticks(epochs)
+plt.savefig('image.jpg')
+#Full time elapse: 17214.159914
