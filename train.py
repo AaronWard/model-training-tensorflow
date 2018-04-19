@@ -13,7 +13,11 @@ from skimage import data, io, filters
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  #Suppress AVX Warnings
 
-ROOT_PATH = os.getcwd()
+#For floydhub
+# TRAINING_DIR = '/data/training'
+# MODEL_PATH = '/output/trained_model.ckpt'
+
+
 TRAINING_DIR = os.getcwd() + '/data/training'
 MODEL_PATH = os.getcwd() + '/output/trained_model.ckpt'
 ####################################### DATA PREPROCESSING - Labeling ################################################
@@ -51,6 +55,9 @@ images, labels = load_data(TRAINING_DIR)
 images = np.array(images)
 labels = np.array(labels)
 
+#One hot encoding
+labels = pd.get_dummies(labels)
+
 ####################################### DATA VISUALISATION #######################################
 ''''
 This cell is for displaying data visualy using Matplotlib
@@ -77,25 +84,28 @@ images = [transform.resize(image, (50, 50)) for image in images]
 # images = [exposure.equalize_adapthist(image, clip_limit=0.0001)for image in images50]
 
 
-#################################### VARIABLE INITIATATION #################################################
 '''
 This cell is for initializing variables for the tensorflow session and 
 placeholders for holding the data.
 
 '''
+
 # Define initial variables
 batch_size = 100
 num_class = 6
-num_epochs = 25
+num_epochs = 100
 
 # Initialize placeholders 
-# x = tf.placeholder('float', [5582, 50, 50])
-x = tf.placeholder(dtype = tf.float32, shape = [None, 50, 50])
-y = tf.placeholder(dtype = tf.int32, shape = [None])
+x = tf.placeholder(dtype = tf.float32, shape = [None, 50, 50], name='X_placeholder')
+
+y = tf.placeholder(dtype = tf.int32, shape= [batch_size, num_class],name="Y_placeholder")
+
 
 #define variables for dropout
 keep_rate = .8
 keep_prop = tf.placeholder(tf.float32)
+print('initialized')
+
 
 # ######################################## HELPER FUNCTIONS #################################################
 
@@ -121,6 +131,14 @@ structure of the network that goes as follows:
 conv1 -> maxpooling -> conv2 -> maxpooling - > conv3 -> fully connected layer (with dropout) -> output layer
 
 '''
+########################################## NETWORK DEFINITION ################################################
+'''
+This cell contains a function that is used define the weights and biases of each layer in the
+network. It is called by the train_network function. It also lays out the
+structure of the network that goes as follows:
+conv1 -> maxpooling -> conv2 -> maxpooling - > conv3 -> fully connected layer (with dropout) -> output layer
+
+'''
 
 # Define the weights and biases as dictionaries and
 # define structure of the network
@@ -138,12 +156,12 @@ def convolutional_network(x):
         'bias_conv2' : tf.Variable(tf.random_normal([128])),
         'bias_conv3' : tf.Variable(tf.random_normal([256])),
         'bias_fully_con' : tf.Variable(tf.random_normal([4096])),
-        'bias_out' : tf.Variable(tf.random_normal([num_class]))
+        'bias_out' : tf.Variable(tf.random_normal([num_class])) #CHANGE THIS IF NO USE
     }
 
     x = tf.reshape(x, shape=[-1, 50, 50, 1])
 
-    # 3 comvolutional and 3 max pooling layers
+    # 3 convolutional and 3 max pooling layers
     conv1 = tf.nn.relu(conv2d(x, weights['weights_conv1']) + biases['bias_conv1'])
     conv1 = maxpool2d(conv1)
 
@@ -156,11 +174,14 @@ def convolutional_network(x):
     # The fully connected layer
     fully_con = tf.reshape(conv3, [-1, 7*7*256])
     fully_con = tf.nn.relu(tf.matmul(fully_con, weights['weights_fully_con']) + biases['bias_fully_con'])
-    fc = tf.nn.dropout(fully_con, keep_rate) # Apply dropout
+    
+    #Apply dropout - 80% of the neurons are kept
+    fully_con = tf.nn.dropout(fully_con, keep_rate) # Apply dropout
 
     output = tf.matmul(fully_con, weights['weights_out']) + biases['bias_out']
     return output
 
+print('network defined')
 ######################################## BATCHING ###################################################
 '''
 This cell is for segmenting the training data in to batches to relieve the GPU of being overloaded
@@ -210,29 +231,45 @@ the number of epochs and feed the image data and labels using feed_dict.
 The loss/cost and accuracy is evaluated and printed to the console.
 
 '''
+'''
+This cell contains a function that runs the tensorflow session, it is called with the x placeholders.
+The session is ran by first initializing all the tensorflow variables, then iterated through
+the number of epochs and feed the image data and labels using feed_dict.
+The loss/cost and accuracy is evaluated and printed to the console.
+
+'''
 
 def train_network(x):
     pred = convolutional_network(x)
-    loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels = y, logits = pred))
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels = y, logits = pred))
     train_op = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer()) # Initialize all the variables
         saver = tf.train.Saver()
-
+    
+        time_full_start = time.clock()
         print("RUNNING SESSION...")
         for epoch in range(num_epochs):
+            
             train_batch_x = []
             train_batch_y = []
+            epoch_loss = 0
+            time_epoch_start = time.clock()
             for i in range(0, 84):
                 train_batch_x = BATCHES_IMAGES[i]
-                train_batch_y = BATCHES_LABELS[i]
-                
-                print('Starting feed_dict on batch ', i)
-                _, loss_value = sess.run([train_op, loss], feed_dict={x: train_batch_x, y: train_batch_y})
-                print('Finished batch --- loss: ', loss_value)
-            print('Epoch : ', epoch+1, ' of ', num_epochs, ' - Loss: ', loss_value)
+                train_batch_y = BATCHES_LABELS[i]    
+                op , loss_value = sess.run([train_op, loss], feed_dict={x: train_batch_x, y: train_batch_y})
+                epoch_loss += loss_value
+                print('batch ', i)
+            print('Epoch : ', epoch+1, ' of ', num_epochs, ' - Loss for epoch: ', epoch_loss)
+            
+            time_epoch_end = time.clock()
+            print('Time elapse: ', time_epoch_end - time_epoch_start)
 
+        time_full_end = time.clock()
+        print('Full time elapse:', time_full_end - time_full_start)
+        
         correct = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
         acc = tf.reduce_mean(tf.cast(correct, 'float'))
         print('Accuracy:', acc)
