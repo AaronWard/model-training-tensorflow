@@ -154,7 +154,6 @@ This cell is for segmenting the training data in to batches to relieve the GPU o
 with data.
 
 '''
-# 8400 images and 8400 labels
 num_images = len(images)
 num_labels = len(labels)
 
@@ -170,7 +169,7 @@ batch_end = 100
 BATCHES_IMAGES = []
 BATCHES_LABELS = []
 
-# batch images into 84 batchs of size 100
+
 for i in range(int(num_images/batch_size)):
     temp_batch = images[batch_start:batch_end]
     BATCHES_IMAGES.append(temp_batch)
@@ -179,7 +178,7 @@ for i in range(int(num_images/batch_size)):
 
 batch_start = 0
 batch_end = 100
-# batch the 8400 Label into 84 batchs of 100
+
 for i in range(int(num_labels/batch_size)):
     temp_batch = labels[batch_start:batch_end]
     BATCHES_LABELS.append(temp_batch)
@@ -196,23 +195,13 @@ The loss/cost and accuracy is evaluated and printed to the console.
 
 def train_network(x):
     pred = convolutional_network(x)
-    # loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels = y, logits = pred))
-    # train_op = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
     cost = tf.reduce_sum(tf.square(pred - y))
 
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer()) # Initialize all the variables
+        sess.run(tf.global_variables_initializer()) 
         saver = tf.train.Saver()
 
-        # print("RUNNING SESSION...")
-        # for epoch in range(num_epochs):
-        train_batch_x = []
-        train_batch_y = []
-        epoch_loss = 0
-        # for i in range(0, 84):
-        #     train_batch_x = BATCHES_IMAGES[i]
-        #     train_batch_y = BATCHES_LABELS[i]          
-        images = np.array(images)      
+
         pr, loss_value = sess.run([pred], [loss], feed_dict={x: images, y: labels})
 
         for i in range(len(pr)):
@@ -226,8 +215,5 @@ def train_network(x):
         correct = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
         acc = tf.reduce_mean(tf.cast(correct, 'float'))
         print('Accuracy:', acc)
-
-        save_path = saver.save(sess, MODEL_PATH)
-        print("Model saved in file: " , save_path)
 ############################################################################################################
 train_network(x)
