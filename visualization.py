@@ -94,17 +94,50 @@ import matplotlib.pyplot as plt
 
 from matplotlib.ticker import NullFormatter
 
-loss = [0, 24.928, 50.30, 80.83, 90.13, 94.5, 95.35, 95.523, 97.32, 97.69, 
-        97.90, 98.095, 98.523, 97.08, 98.178, 97.952, 97.85, 97.785, 97.96, 
-        98.40, 98.6]
+# loss = [0, 24.928, 50.30, 80.83, 90.13, 94.5, 95.35, 95.523, 97.32, 97.69, 
+#         97.90, 98.095, 98.523, 97.08, 98.178, 97.952, 97.85, 97.785, 97.96, 
+#         98.40, 98.6]
 
-epochs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 ,15 ,16, 17, 18, 19, 20]
+# epochs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 ,15 ,16, 17, 18, 19, 20]
 
-plt.grid(True)
-plt.plot(epochs, loss)
-plt.title('Training Accuracy')
-plt.ylabel('Accuracy %')
-plt.xlabel('Epochs')
-plt.xticks(epochs)
-plt.savefig('accuracy.jpg')
-# Full time elapse: 607.854786
+# plt.grid(True)
+# plt.plot(epochs, loss)
+# plt.title('Training Accuracy')
+# plt.ylabel('Accuracy %')
+# plt.xlabel('Epochs')
+# plt.xticks(epochs)
+# plt.savefig('accuracy.jpg')
+# # Full time elapse: 607.854786
+
+
+
+import matplotlib.pyplot as plt
+ 
+# Assume m is 2D Numpy array with these values
+# [[1.0 0   0   0  ]
+#  [0.1 0.7 0.2 0  ]
+#  [0   0   1.0 0  ]
+#  [0   0   0   1.0]]
+
+m = [
+     [312,14,12,12,0,0],  #anger
+     [9,338,0,0,3,0   ], #fear
+     [3,9,338,0,0,0   ],  #happy
+     [12,58,58,134,88,0 ], # neutral
+     [32,3,0,1,313,1],
+     [0,8,0,0,3,339 ] ]
+
+
+emotions = ['Anger', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
+import seaborn as sn
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df_cm = pd.DataFrame(m, index = [i for i in emotions],
+                  columns = [i for i in emotions])
+plt.figure(figsize = (10,7))
+sn.heatmap(df_cm, annot=True, cmap='Blues', fmt='g')
+plt.title("Confusion Matrix for Test Images")
+plt.xlabel('Predicted', weight='bold')
+plt.ylabel('Actual', weight='bold')
+plt.savefig('confusion.jpg')
