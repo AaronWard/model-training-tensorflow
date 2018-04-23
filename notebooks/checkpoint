@@ -1,2 +1,0 @@
-model_checkpoint_path: "/output/trained_model.ckpt"
-all_model_checkpoint_paths: "/output/trained_model.ckpt"
